@@ -1,8 +1,8 @@
-# [Project Title]
+# Faster Is Slower Lecture Theatre Evacuation Simulation
 
 [One-sentence pitch: what this simulation does and the question it answers.]
 
-**[Live demo](https://[your-github-user].github.io/[repository-name]/)** · [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/[your-github-user]/[repository-name]/blob/main/notebook/project-name.ipynb)
+**[Live demo](https://github.com/SahajiPerera/Faster-Is-Slower-Lecture-Theatre-Evacuation-Simulation.git)** · [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SahajiPerera/Faster-Is-Slower-Lecture-Theatre-Evacuation-Simulation/blob/main/notebook/project-name.ipynb)
 
 ![Screenshot of the web demo](figures/demo-screenshot.png)
 
