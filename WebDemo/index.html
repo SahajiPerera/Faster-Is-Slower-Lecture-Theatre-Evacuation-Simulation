@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lecture-Theatre Evacuation Simulator</title>
+<style>
+:root{
+  --bg:#101417;--card:#171d21;--card2:#1d2529;--line:#35434a;--text:#f2eee6;--mute:#aab7bc;
+  --accent:#d88a4a;--accent2:#2dd4d0;--good:#8fd3a9;--bad:#e88b91;--warn:#e5c878;
+  --inset:#0b0f11;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1100px 650px at 8% -12%,#26363a 0%,var(--bg) 58%) fixed;
+  color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:20px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:24px;margin:0;letter-spacing:.2px}
+h1 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mute);font-size:13px;margin-top:4px}
+.badge{padding:5px 14px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--card)}
+.badge.run{color:var(--accent);border-color:var(--accent)}
+.badge.done{color:var(--good);border-color:var(--good)}
+.badge.pause{color:var(--warn);border-color:var(--warn)}
+.grid{display:grid;grid-template-columns:310px minmax(0,1fr) 360px;gap:16px;align-items:start}
+@media(max-width:1150px){.grid{grid-template-columns:1fr 1fr}.grid .room{grid-column:1/3;order:-1}}
+@media(max-width:720px){.grid{grid-template-columns:1fr}.grid .room{grid-column:1}}
+.card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-radius:16px;padding:16px;
+  box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.card h3{margin:0 0 12px;font-size:12px;text-transform:uppercase;letter-spacing:1.4px;color:var(--mute);font-weight:700}
+.ctl{margin-bottom:14px}
+.ctl .top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px}
+.ctl .top b{color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number]{background:var(--inset);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;width:90px}
+.check{display:flex;gap:8px;align-items:center;font-size:13px;margin:6px 0 14px;cursor:pointer}
+.check input{accent-color:var(--accent);width:16px;height:16px}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+button{cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:#101417;padding:8px 14px;border-radius:10px;
+  font-weight:600;font-size:13px;transition:.15s}
+button:hover{border-color:#efaa68;background:#efaa68;transform:translateY(-1px)}
+button.primary{background:var(--accent);color:#101417;border:1px solid var(--accent)}
+button.small{padding:5px 10px;font-size:12px;font-weight:500}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.sep{height:1px;background:var(--line);margin:14px 0}
+canvas{width:100%;height:auto;display:block;border-radius:12px;background:var(--inset)}
+.legend{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute);margin-top:10px}
+.legend .bar{flex:1;height:8px;border-radius:6px;background:linear-gradient(90deg,hsl(220,80%,55%),hsl(110,80%,50%),hsl(0,80%,55%))}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.tile{background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.tile .k{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:1px}
+.tile .v{font-size:22px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .u{font-size:12px;color:var(--mute);font-weight:400}
+.prog{height:8px;background:var(--inset);border-radius:6px;overflow:hidden;margin:2px 0 12px;border:1px solid var(--line)}
+.prog div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .1s}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:700;font-size:12px}
+.pill.ok{background:rgba(168,240,196,.2);color:var(--good)}
+.pill.no{background:rgba(255,180,168,.2);color:var(--bad)}
+.result{font-size:13px;line-height:1.6;background:var(--inset);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px}
+.result .big{font-size:20px;font-weight:700;color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+th{color:var(--mute);text-align:left;font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}
+td{padding:5px 6px;border-bottom:1px solid #29363c;font-variant-numeric:tabular-nums}
+.about{margin-top:16px}
+.about summary{cursor:pointer;font-weight:700}
+.about p,.about li{color:#dce4e5;font-size:14px;line-height:1.6}
+.about code{background:var(--inset);padding:1px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1><span>Lecture-Theatre Evacuation</span> Simulator</h1>
+    <div class="sub">150 people, two aisles, one door. Social force model (Helbing et al., 2000), velocity Verlet, running live in your browser.</div>
+  </div>
+  <div id="status" class="badge">Ready</div>
+</header>
+
+<div class="grid">
+  <!-- CONTROLS -->
+  <div class="card">
+    <h3>Parameters</h3>
+    <div class="ctl"><div class="top"><span>Desired speed v0</span><b><span id="v0o"></span> m/s</b></div>
+      <input id="v0" type="range" min="1" max="10" step="0.5" value="3"></div>
+    <div class="ctl"><div class="top"><span>Exit width</span><b><span id="wo"></span> m</b></div>
+      <input id="w" type="range" min="0.8" max="2.5" step="0.1" value="1.2"></div>
+    <label class="check"><input id="pil" type="checkbox"> Pillar in front of the exit (r = 0.3 m, 1.5 m away)</label>
+    <div class="ctl"><div class="top"><span>Random seed</span></div>
+      <input id="seed" type="number" value="42"></div>
+    <div class="ctl"><div class="top"><span>Playback speed</span><b><span id="spo"></span> steps/frame</b></div>
+      <input id="sp" type="range" min="10" max="400" step="10" value="100"></div>
+    <div class="btns">
+      <button id="start" class="primary">Start</button>
+      <button id="pause">Pause</button>
+      <button id="reset">Reset</button>
+    </div>
+    <div class="sep"></div>
+    <h3>Presets</h3>
+    <div class="btns">
+      <button class="small" id="p1">Calm (3 m/s)</button>
+      <button class="small" id="p2">Panic (7 m/s)</button>
+      <button class="small" id="p3">Wide door (2 m)</button>
+    </div>
+    <div class="sep"></div>
+    <h3>Batch (Monte Carlo)</h3>
+    <div class="ctl"><div class="top"><span>Number of runs (seeds = seed, seed+1, ...)</span></div>
+      <input id="nrun" type="number" min="2" max="30" value="10"></div>
+    <label class="check"><input id="banim" type="checkbox"> Show animation during batch (a little slower)</label>
+    <div class="btns"><button id="batch" class="primary">Run batch</button></div>
+    <div id="bstat" class="sub"></div>
+  </div>
+
+  <!-- ROOM -->
+  <div class="card room">
+    <h3>Live view (plan view, exit at the top)</h3>
+    <canvas id="room" width="1132" height="1030"></canvas>
+    <div class="legend"><span>0 m/s</span><div class="bar"></div><span>3+ m/s</span></div>
+  </div>
+
+  <!-- OUTPUTS -->
+  <div>
+    <div class="card">
+      <h3>Live outputs</h3>
+      <div class="tiles">
+        <div class="tile"><div class="k">Time</div><div class="v"><span id="o_t">0.0</span> <span class="u">s</span></div></div>
+        <div class="tile"><div class="k">People out</div><div class="v"><span id="o_out">0</span> <span class="u">/ 150</span></div></div>
+        <div class="tile"><div class="k">Flow (last 5 s)</div><div class="v"><span id="o_fl">-</span> <span class="u">p/s</span></div></div>
+        <div class="tile"><div class="k">Evacuation time</div><div class="v"><span id="o_ev">-</span> <span class="u">s</span></div></div>
+      </div>
+      <div class="prog"><div id="pbar"></div></div>
+      <canvas id="chart" width="720" height="300"></canvas>
+      <div class="sub" style="margin-top:8px">Time step dt = <span id="o_dt"></span> s</div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h3>Batch results</h3>
+      <div id="bres" class="result" style="margin-top:0">Run a batch to get the mean evacuation time with a 95% confidence interval.</div>
+      <table id="btab" style="display:none">
+        <thead><tr><th>v0</th><th>Door</th><th>Pillar</th><th>Mean +/- CI [s]</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<details class="card about" open>
+<summary>About / How to use</summary>
+<p>150 people (10 rows, two aisles, one exit door in the front wall) leave a lecture theatre. Each person is a disc driven toward the nearest aisle and then to the exit, and is pushed by neighbours and walls (social repulsion, body compression and sliding friction). Integration is velocity Verlet. Circle colour shows speed.</p>
+<ol>
+<li>Press <b>Start</b> to watch one run. <b>Pause</b> and <b>Reset</b> work as usual. Changing a parameter resets the run.</li>
+<li>Try the <b>presets</b>, or change the desired speed, door width and pillar yourself.</li>
+<li>Press <b>Run batch</b> for the mean evacuation time with a 95% confidence interval over several seeds. Tick <b>Show animation during batch</b> to watch each run as it is computed (slightly slower).</li>
+</ol>
+<p><b>Try this:</b> run a batch at v0 = 3 and another at v0 = 7 with a 1.2 m door. The faster crowd needs longer (faster-is-slower). Then widen the door to 2.0 m and the effect disappears.</p>
+<p><b>Notebook reference checks</b> (door 1.2 m, no pillar; values from the notebook's full run, <code>FULL_RUN = True</code>, 10 seeds; the quick run uses fewer seeds, so its numbers differ):</p>
+<ul>
+<li>v0 = 3 m/s: <b>64.3 s</b> (95% CI +/- 2.0 s). A batch of 10 runs here must agree within <b>+/- 5 s</b>.</li>
+<li>v0 = 7 m/s: <b>81.9 s</b> (95% CI +/- 7.2 s). A batch of 10 runs here must agree within <b>+/- 10 s</b>, because both intervals are wider at this speed. These runs use dt = 0.0005 s and are much slower than the 3 m/s runs: on the author's laptop a run took about 30 s (measured over 2 runs), so a batch of 10 takes about 5 minutes (an earlier 10-run batch gave 78.2 s, PASS). Keep the tab visible and in front while it runs: a hidden tab is throttled by the browser and can take several times longer. For a quick check use fewer runs (for example 3 to 5), which gives a wider interval. The elapsed time of each batch is shown in the results box.</li>
+</ul>
+<p>A PASS/FAIL badge appears at those settings. Tolerances are roughly the notebook interval plus the demo's own interval.</p>
+<p><b>Limitations:</b> 2D plan view, round bodies, same desired speed for everybody. JavaScript's random generator differs from NumPy's, so a single seed will not match the notebook, only the statistics do. Speeds above 5 m/s use dt = 0.0005 s and run roughly 2 to 3 times more slowly (about 30 s per run at 7 m/s against about 11 s at 3 m/s on the author's laptop).</p>
+<p><b>Numerical safeguards:</b> as in the notebook, a run is marked <i>invalid</i> and excluded from batch statistics if a person ends up outside the room (tunnelling through a wall, a risk at very high desired speeds with too large a time step). The demo finds neighbours by checking every pair, O(N<sup>2</sup>), whereas the notebook uses cell lists; with only 150 people the forces and results are identical, the notebook version is just faster for large crowds.</p>
+</details>
+</div>
+
+<script>
+// ---------------- Model (port of the notebook, unchanged) ----------------
+const P={m:80,tau:0.5,A:2000,B:0.08,k:1.2e5,kap:2.4e5,rmin:0.25,rmax:0.35,pitch:0.75,rows:10,
+  rowD:0.9,aisleW:1.2,front:3.0,nAisles:2,block:5,pilR:0.3,pilD:1.5};
+const DCUT=2.0,WCUT=1.5,TURN=1.2,TMAX=400,CUT2=DCUT*DCUT,WCUT2=WCUT*WCUT;
+const BW=P.block*P.pitch,NB=P.nAisles+1;
+const ROOMW=NB*BW+P.nAisles*P.aisleW,ROOML=P.rows*P.rowD+P.front,EXITX=ROOMW/2;
+const AISLE=[0,1].map(a=>(a+1)*BW+a*P.aisleW+P.aisleW/2);
+
+function rng(seed){let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);
+  t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+
+function buildWalls(w){
+  const W=[[0,0,0,ROOML],[ROOMW,0,ROOMW,ROOML],[0,ROOML,ROOMW,ROOML],
+           [0,0,EXITX-w/2,0],[EXITX+w/2,0,ROOMW,0]];
+  for(let r=0;r<P.rows;r++)for(let b=0;b<NB;b++){
+    const y=P.front+r*P.rowD,bl=b*(BW+P.aisleW);W.push([bl,y,bl+BW,y]);}
+  return W;
+}
+
+function createSim(v0,width,pillarOn,seed){
+  const dt=v0<=5?0.001:0.0005;
+  const wl=buildWalls(width).map(([x1,y1,x2,y2])=>{const lx=x2-x1,ly=y2-y1,L=Math.hypot(lx,ly);
+    return{x1,y1,L,tx:lx/L,ty:ly/L,x0:Math.min(x1,x2),x9:Math.max(x1,x2),y0:Math.min(y1,y2),y9:Math.max(y1,y2)};});
+  const pil=pillarOn?{cx:EXITX,cy:P.pilD,R:P.pilR}:null;
+  const n=P.rows*NB*P.block,rand=rng(seed);
+  const F=()=>new Float64Array(n);
+  const px=F(),py=F(),vx=F(),vy=F(),ax=F(),ay=F(),qx=F(),qy=F(),ux=F(),uy=F(),bx=F(),by=F(),fx=F(),fy=F(),rad=F(),tex=F();
+  tex.fill(NaN);const act=new Uint8Array(n).fill(1);
+  let i=0;
+  for(let r=0;r<P.rows;r++)for(let b=0;b<NB;b++)for(let s=0;s<P.block;s++){
+    px[i]=b*(BW+P.aisleW)+(s+0.5)*P.pitch;py[i]=P.front+(r+0.5)*P.rowD;i++;}
+  for(i=0;i<n;i++){px[i]+=(rand()*2-1)*0.02;py[i]+=(rand()*2-1)*0.02;}   // random seat offset [m]
+  for(i=0;i<n;i++)rad[i]=P.rmin+rand()*(P.rmax-P.rmin);                  // random body radius [m]
+
+  function contact(i,ov,nx,ny,vxi,vyi){            // wall / pillar force (same law as pair force)
+    let fm=P.A*Math.exp(ov/P.B),fr=0;
+    if(ov>0){fm+=P.k*ov;fr=-P.kap*ov*(vxi*(-ny)+vyi*nx);}
+    fx[i]+=fm*nx+fr*(-ny);fy[i]+=fm*ny+fr*nx;
+  }
+  function accel(X,Y,VX,VY,OX,OY){
+    fx.fill(0);fy.fill(0);
+    for(let i=0;i<n;i++){if(!act[i])continue;
+      for(let j=i+1;j<n;j++){if(!act[j])continue;
+        const dx=X[i]-X[j],dy=Y[i]-Y[j],d2=dx*dx+dy*dy;if(d2>CUT2)continue;
+        const d=Math.sqrt(d2);if(d===0)continue;
+        const nx=dx/d,ny=dy/d,ov=rad[i]+rad[j]-d;
+        let fm=P.A*Math.exp(ov/P.B),fr=0;
+        if(ov>0){fm+=P.k*ov;fr=-P.kap*ov*((VX[i]-VX[j])*(-ny)+(VY[i]-VY[j])*nx);}
+        const f1=fm*nx+fr*(-ny),f2=fm*ny+fr*nx;
+        fx[i]+=f1;fy[i]+=f2;fx[j]-=f1;fy[j]-=f2;}
+      const x=X[i],y=Y[i];
+      for(let w=0;w<wl.length;w++){const q=wl[w];
+        const dxb=Math.max(q.x0-x,0,x-q.x9),dyb=Math.max(q.y0-y,0,y-q.y9);
+        if(dxb*dxb+dyb*dyb>WCUT2)continue;
+        let pr=(x-q.x1)*q.tx+(y-q.y1)*q.ty;pr=Math.max(0,Math.min(q.L,pr));
+        const rx=x-(q.x1+pr*q.tx),ry=y-(q.y1+pr*q.ty),d=Math.hypot(rx,ry);if(d===0)continue;
+        contact(i,rad[i]-d,rx/d,ry/d,VX[i],VY[i]);}
+      if(pil){const rx=x-pil.cx,ry=y-pil.cy,dc=Math.hypot(rx,ry);
+        if(dc>0&&dc-pil.R<=WCUT)contact(i,rad[i]-(dc-pil.R),rx/dc,ry/dc,VX[i],VY[i]);}
+      // desired direction (waypoint rule)
+      let tx,ty;
+      if(y<P.front){tx=EXITX;ty=-1.0;}
+      else{let best=0,bd=Math.abs(x-AISLE[0]);
+        for(let a=1;a<AISLE.length;a++){const d=Math.abs(x-AISLE[a]);if(d<bd){bd=d;best=a;}}
+        tx=AISLE[best];ty=bd<TURN?y-1.0:y;}
+      let ex=tx-x,ey=ty-y;const dl=Math.hypot(ex,ey);if(dl>0){ex/=dl;ey/=dl;}else{ex=0;ey=0;}
+      OX[i]=(v0*ex-VX[i])/P.tau+fx[i]/P.m;OY[i]=(v0*ey-VY[i])/P.tau+fy[i]/P.m;}
+  }
+  accel(px,py,vx,vy,ax,ay);
+  const S={n,px,py,vx,vy,rad,act,tex,dt,width,steps:0,t:0,nOut:0,done:false,ok:false,bad:false,wl,pil};
+  S.step=function(){
+    for(let i=0;i<n;i++){if(!act[i])continue;
+      qx[i]=px[i]+vx[i]*dt+0.5*ax[i]*dt*dt;qy[i]=py[i]+vy[i]*dt+0.5*ay[i]*dt*dt;
+      ux[i]=vx[i]+ax[i]*dt;uy[i]=vy[i]+ay[i]*dt;}
+    accel(qx,qy,ux,uy,bx,by);
+    S.steps++;S.t=S.steps*dt;
+    for(let i=0;i<n;i++){if(!act[i])continue;
+      vx[i]+=0.5*(ax[i]+bx[i])*dt;vy[i]+=0.5*(ay[i]+by[i])*dt;
+      px[i]=qx[i];py[i]=qy[i];ax[i]=bx[i];ay[i]=by[i];
+      if(py[i]<0){act[i]=0;tex[i]=S.t;S.nOut++;vx[i]=vy[i]=ax[i]=ay[i]=0;}
+      else if(px[i]<0||px[i]>ROOMW||py[i]>ROOML)S.bad=true;}   // still active but outside the room: tunnelled through a wall (same rule as the notebook)
+    if(S.bad){S.done=true;S.ok=false;}
+    else if(S.nOut===n){S.done=true;S.ok=true;}else if(S.t>=TMAX)S.done=true;
+  };
+  return S;
+}
+
+// ---------------- Statistics ----------------
+const TQ=[12.706,4.303,3.182,2.776,2.571,2.447,2.365,2.306,2.262,2.228,2.201,2.179,2.160,2.145,2.131,
+  2.120,2.110,2.101,2.093,2.086,2.080,2.074,2.069,2.064,2.060,2.056,2.052,2.048,2.045,2.042];
+function meanCI(x){const n=x.length;if(!n)return[NaN,NaN];const m=x.reduce((a,b)=>a+b,0)/n;
+  if(n<2)return[m,NaN];const sd=Math.sqrt(x.reduce((a,b)=>a+(b-m)*(b-m),0)/(n-1));
+  return[m,(n-1<=30?TQ[n-2]:1.96)*sd/Math.sqrt(n)];}
+
+// Notebook reference results (full run, 10 seeds, door 1.2 m, no pillar, section 5.4):
+// 3 m/s: 64.3 +/- 2.0 s, tolerance 5 s;  7 m/s: 81.9 +/- 7.2 s, tolerance 10 s (the 7 m/s interval is wider)
+const REFS=[{v0:3,m:64.3,tol:5},{v0:7,m:81.9,tol:10}];
+
+// ---------------- UI ----------------
+const $=id=>document.getElementById(id);
+const SC=80,MX=20,TOP=50;               // canvas scale [px per m], left margin, top margin (internal px)
+let sim,running=false,hist=[],lastRec=0,batching=false;
+const room=$('room').getContext('2d'),chart=$('chart').getContext('2d');
+
+// ---------- Lecture hall colours (Sage grey): edit only this block ----------
+const HALL={
+  floor:'#0d1215',               // room floor
+  laneA:'#1b2529',               // seat rows (odd)
+  laneB:'#222e33',               // seat rows (even)
+  aisle:'rgba(45,212,208,.38)', // dashed aisle guides
+  wall:'#d7ddd9',                // walls and seat-back lines
+  door:'#d88a4a',                // exit door and label
+  pillarLight:'#f1d39b',         // pillar highlight
+  pillarDark:'#7b4e31',          // pillar shade
+  outline:'rgba(5,9,11,.72)',  // thin outline around people
+  slowHue:185, fastHue:25,        // people colour: slow -> fast (hue 0-360)
+  sat:75, light:58               // people saturation and lightness (%)
+};
+// keeps the legend bar in sync with the people colours
+(function(){
+  const h=t=>'hsl('+(HALL.slowHue+(HALL.fastHue-HALL.slowHue)*t)+','+HALL.sat+'%,'+HALL.light+'%)';
+  document.querySelector('.legend .bar').style.background='linear-gradient(90deg,'+h(0)+','+h(0.5)+','+h(1)+')';
+})();
+
+function params(){return{v0:+$('v0').value,w:+$('w').value,pil:$('pil').checked,seed:+$('seed').value||0};}
+function labels(){$('v0o').textContent=$('v0').value;$('wo').textContent=(+$('w').value).toFixed(1);$('spo').textContent=$('sp').value;}
+function setStatus(txt,cls){const s=$('status');s.textContent=txt;s.className='badge'+(cls?' '+cls:'');}
+
+function reset(){
+  if(batching)return;
+  const p=params();labels();sim=createSim(p.v0,p.w,p.pil,p.seed);running=false;
+  hist=[[0,0]];lastRec=0;$('o_dt').textContent=sim.dt;$('o_ev').textContent='-';$('o_fl').textContent='-';
+  setStatus('Ready','');draw();
+}
+
+function X(x){return MX+x*SC;}
+function Y(y){return TOP+y*SC;}
+
+function drawRoom(){
+  const c=room;c.clearRect(0,0,1132,1030);
+  c.fillStyle=HALL.floor;c.fillRect(X(0),Y(0),ROOMW*SC,ROOML*SC);
+  for(let r=0;r<P.rows;r++)for(let b=0;b<NB;b++){
+    const bl=b*(BW+P.aisleW);
+    c.fillStyle=(r%2)?HALL.laneA:HALL.laneB;
+    c.fillRect(X(bl),Y(P.front+r*P.rowD),BW*SC,P.rowD*SC);}
+  c.strokeStyle=HALL.aisle;c.setLineDash([8,8]);c.lineWidth=2;
+  for(const a of AISLE){c.beginPath();c.moveTo(X(a),Y(P.front));c.lineTo(X(a),Y(ROOML));c.stroke();}
+  c.setLineDash([]);
+  c.strokeStyle=HALL.wall;c.lineWidth=4;c.lineCap='round';c.beginPath();
+  for(const q of sim.wl){c.moveTo(X(q.x1),Y(q.y1));c.lineTo(X(q.x1+q.tx*q.L),Y(q.y1+q.ty*q.L));}
+  c.stroke();
+  const x0=X(EXITX-sim.width/2),x1=X(EXITX+sim.width/2);
+  c.save();c.shadowColor=HALL.door;c.shadowBlur=18;c.strokeStyle=HALL.door;c.lineWidth=7;
+  c.beginPath();c.moveTo(x0,Y(0));c.lineTo(x1,Y(0));c.stroke();c.restore();
+  c.fillStyle=HALL.door;c.font='bold 22px system-ui,Arial';c.textAlign='center';
+  c.fillText('EXIT  '+sim.width.toFixed(1)+' m',(x0+x1)/2,Y(0)-16);
+  if(sim.pil){const g=c.createRadialGradient(X(sim.pil.cx)-6,Y(sim.pil.cy)-6,2,X(sim.pil.cx),Y(sim.pil.cy),sim.pil.R*SC);
+    g.addColorStop(0,HALL.pillarLight);g.addColorStop(1,HALL.pillarDark);
+    c.fillStyle=g;c.beginPath();c.arc(X(sim.pil.cx),Y(sim.pil.cy),sim.pil.R*SC,0,7);c.fill();}
+  for(let i=0;i<sim.n;i++){if(!sim.act[i])continue;
+    const sp=Math.hypot(sim.vx[i],sim.vy[i]),t=Math.min(sp/3,1);
+    c.fillStyle='hsl('+(HALL.slowHue+(HALL.fastHue-HALL.slowHue)*t)+','+HALL.sat+'%,'+HALL.light+'%)';
+    c.beginPath();c.arc(X(sim.px[i]),Y(sim.py[i]),sim.rad[i]*SC,0,7);c.fill();
+    c.strokeStyle=HALL.outline;c.lineWidth=1.5;c.stroke();}
+}
+
+function drawChart(){
+  const g=chart,W=720,H=300,L=64,R=18,T=18,B=48,pw=W-L-R,ph=H-T-B;
+  g.clearRect(0,0,W,H);
+  const tm=Math.max(20,Math.ceil(sim.t/10)*10);
+  g.font='18px system-ui,Arial';g.fillStyle='#aab7bc';g.strokeStyle='#35434a';g.lineWidth=1;g.textAlign='right';
+  for(let v=0;v<=150;v+=50){const y=T+ph-v/150*ph;g.beginPath();g.moveTo(L,y);g.lineTo(W-R,y);g.stroke();g.fillText(v,L-8,y+6);}
+  g.textAlign='center';
+  for(let k=0;k<=4;k++){const t=tm*k/4,x=L+k/4*pw;g.fillText(t.toFixed(0),x,H-24);}
+  g.fillText('time [s]',L+pw/2,H-4);
+  g.save();g.translate(16,T+ph/2);g.rotate(-Math.PI/2);g.fillText('people out',0,0);g.restore();
+  if(hist.length<2)return;
+  const pts=hist.map(([t,o])=>[L+t/tm*pw,T+ph-o/sim.n*ph]);
+  const grad=g.createLinearGradient(0,T,0,T+ph);grad.addColorStop(0,'rgba(45,212,208,.24)');grad.addColorStop(1,'rgba(45,212,208,0)');
+  g.beginPath();pts.forEach(([x,y],k)=>k?g.lineTo(x,y):g.moveTo(x,y));
+  g.lineTo(pts[pts.length-1][0],T+ph);g.lineTo(pts[0][0],T+ph);g.closePath();g.fillStyle=grad;g.fill();
+  g.beginPath();pts.forEach(([x,y],k)=>k?g.lineTo(x,y):g.moveTo(x,y));
+  g.strokeStyle='#d88a4a';g.lineWidth=3;g.stroke();
+}
+
+function flow(){
+  if(sim.t<1)return '-';
+  let ref=hist[0];for(let k=hist.length-1;k>=0;k--){if(hist[k][0]<=sim.t-5){ref=hist[k];break;}}
+  const dtm=sim.t-ref[0];if(dtm<=0)return '-';
+  return ((sim.nOut-ref[1])/dtm).toFixed(2);
+}
+
+function draw(){
+  drawRoom();drawChart();
+  $('o_t').textContent=sim.t.toFixed(1);$('o_out').textContent=sim.nOut;
+  $('pbar').style.width=(sim.nOut/sim.n*100)+'%';
+  $('o_fl').textContent=flow();
+  if(sim.done)$('o_ev').textContent=sim.ok?sim.t.toFixed(1):(sim.bad?'invalid':'>'+TMAX);
+}
+
+function frame(){
+  if(running&&!sim.done){const t0=performance.now(),spf=+$('sp').value;let s=0;
+    while(s<spf&&!sim.done&&performance.now()-t0<14){sim.step();s++;}
+    if(sim.t-lastRec>=0.5||sim.done){hist.push([sim.t,sim.nOut]);lastRec=sim.t;}}
+  draw();
+  if(sim.done){running=false;setStatus(sim.ok?'Finished':(sim.bad?'Invalid: wall tunnelling':'Not finished'),sim.ok?'done':'');}
+  if(running)requestAnimationFrame(frame);
+}
+
+function addBatchRow(p,m,h){
+  const tb=$('btab').querySelector('tbody');$('btab').style.display='table';
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+p.v0+' m/s</td><td>'+p.w.toFixed(1)+' m</td><td>'+(p.pil?'yes':'no')+'</td><td><b>'+m.toFixed(1)+' +/- '+h.toFixed(1)+'</b></td>';
+  tb.insertBefore(tr,tb.firstChild);while(tb.children.length>6)tb.removeChild(tb.lastChild);
+}
+
+function runBatch(){
+  if(batching)return;batching=true;running=false;$('batch').disabled=true;
+  const tBatch0=performance.now();                       // start of the batch, for the elapsed-time readout
+  const anim=$('banim').checked;let lastDraw=0;          // animation switch is read once per batch
+  function attach(c){if(anim){sim=c;hist=[[0,0]];lastRec=0;$('o_dt').textContent=c.dt;$('o_ev').textContent='-';}}
+  setStatus('Batch running','run');
+  const p=params(),N=Math.max(2,Math.min(30,+$('nrun').value||10)),times=[];let nBad=0;
+  let k=0,cur=createSim(p.v0,p.w,p.pil,p.seed);attach(cur);
+  (function work(){
+    const t0=performance.now();
+    while(performance.now()-t0<30){
+      for(let q=0;q<200&&!cur.done;q++)cur.step();
+      if(cur.done){times.push(cur.ok?cur.t:NaN);if(cur.bad)nBad++;k++;
+        if(k>=N){return finish();}
+        cur=createSim(p.v0,p.w,p.pil,p.seed+k);attach(cur);}}
+    if(anim){                                            // redraw the live view about every 0.1 s
+      if(cur.t-lastRec>=0.5){hist.push([cur.t,cur.nOut]);lastRec=cur.t;}
+      const now=performance.now();if(now-lastDraw>=100){draw();lastDraw=now;}}
+    $('bstat').textContent='Run '+(k+1)+' of '+N+'  (t = '+cur.t.toFixed(0)+' s)';
+    setTimeout(work,0);
+  })();
+  function finish(){
+    batching=false;$('batch').disabled=false;$('bstat').textContent='';setStatus('Batch done','done');
+    if(anim){hist.push([sim.t,sim.nOut]);draw();}
+    const ok=times.filter(isFinite),[m,h]=meanCI(ok);
+    let html='<div class="big">'+m.toFixed(1)+' +/- '+h.toFixed(1)+' s</div>'+
+      'mean evacuation time (95% CI), '+ok.length+' of '+N+' runs finished'+(nBad?' ('+nBad+' invalid: agent tunnelled through a wall, excluded)':'')+'<br>'+
+      '<span style="color:#aab7bc">v0 = '+p.v0+' m/s, door '+p.w.toFixed(1)+' m, pillar '+(p.pil?'yes':'no')+'</span><br>'+
+      '<span style="color:#aab7bc">Runs: '+times.map(t=>isFinite(t)?t.toFixed(1):'fail').join(', ')+'</span><br>';
+    const secs=(performance.now()-tBatch0)/1000;
+    html+='<span style="color:#aab7bc">Batch time: '+secs.toFixed(1)+' s for '+N+' runs ('+(secs/N).toFixed(1)+' s per run, dt = '+(p.v0<=5?0.001:0.0005)+' s'+(anim?', animation on':'')+'; depends on your device and browser)</span><br>';
+    const ref=REFS.find(r=>p.v0===r.v0&&Math.abs(p.w-1.2)<1e-9&&!p.pil);
+    if(ref){
+      const pass=Math.abs(m-ref.m)<=ref.tol,df=m-ref.m;
+      html+='Notebook reference '+ref.m+' s +/- '+ref.tol+' s: <span class="pill '+(pass?'ok':'no')+'">'+(pass?'PASS':'FAIL')+
+        '</span> (difference '+(df>=0?'+':'')+df.toFixed(1)+' s)';}
+    else html+='<i style="color:#aab7bc">Reference checks apply only at door 1.2 m, no pillar, and v0 = 3 or 7 m/s.</i>';
+    $('bres').innerHTML=html;addBatchRow(p,m,isFinite(h)?h:0);
+  }
+}
+
+function preset(v0,w,pil){$('v0').value=v0;$('w').value=w;$('pil').checked=pil;reset();}
+
+$('start').onclick=()=>{if(sim.done||batching)return;if(!running){running=true;setStatus('Running','run');requestAnimationFrame(frame);}};
+$('pause').onclick=()=>{if(running){running=false;setStatus('Paused','pause');}};
+$('reset').onclick=reset;
+$('batch').onclick=runBatch;
+$('p1').onclick=()=>preset(3,1.2,false);
+$('p2').onclick=()=>preset(7,1.2,false);
+$('p3').onclick=()=>preset(3,2.0,false);
+['v0','w','pil','seed'].forEach(id=>$(id).addEventListener('input',reset));
+$('sp').addEventListener('input',labels);
+reset();
+</script>
+</body>
+</html>
