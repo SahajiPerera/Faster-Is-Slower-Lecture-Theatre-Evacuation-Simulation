@@ -4,7 +4,7 @@ A social-force simulation of 150 people leaving a tiered lecture theatre, showin
 
 ## Live demo and notebook
 
-- **Live demo:** {{GitHub Pages URL, e.g. https://sahajiperera.github.io/Faster-Is-Slower-Lecture-Theatre-Evacuation-Simulation/}}
+- **Live demo:** https://sahajiperera.github.io/Faster-Is-Slower-Lecture-Theatre-Evacuation-Simulation/
 - [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/SahajiPerera/Faster-Is-Slower-Lecture-Theatre-Evacuation-Simulation/blob/main/notebook/Faster-Is-Slower-Lecture-Theatre-Evacuation-Simulation.ipynb)
 
 ![Web demo screenshot](figures/fig_webdemo2.png)
@@ -20,7 +20,7 @@ The measured quantity is the time at which the last of 150 people crosses the ex
 
 ## Quick start
 
-**Notebook.** Click the Colab badge and choose *Runtime -> Run all*. The default quick mode takes about {{minutes}} minutes; set `FULL_RUN = True` in the setup cell for the full study (about 60 minutes, 10 seeds).
+**Notebook.** Click the Colab badge and choose *Runtime -> Run all*. The default quick mode takes about [MINUTES] minutes; set `FULL_RUN = True` in the setup cell for the full study (about 60 minutes, 10 seeds).
 
 **Locally.**
 ```
@@ -42,7 +42,7 @@ Social force model with driving force, exponential repulsion, body compression a
 
 The code is checked against analytic results, for example the single-agent relaxation $v(t)=v_0(1-e^{-t/\tau})$ with a measured convergence order close to 2, and the wall stand-off distance $-B\ln(m v_0/(\tau A))$. It also checks conservation of people, cell lists against brute force, and confidence-interval coverage.
 
-![Verification: error scaling](figures/fig_x2_error_scaling.png)
+![Verification: error scaling](figures/fig5.png)
 
 ## Concepts applied
 
